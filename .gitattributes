@@ -1,0 +1,2 @@
+logs/*.log linguist-documentation=true
+logs/*.txt -diff
