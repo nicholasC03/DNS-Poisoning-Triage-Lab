@@ -35,13 +35,13 @@ The primary evidence of this incident is captured in the provided `.pcap` file. 
 
 ---
 
-## 🛠️ Phase 3: Remediation & Hardening
-The remediation strategy focused on eliminating the physical threat and encrypting the DNS transport layer to prevent future unencrypted injection.
+### 🛠️ Phase 3: Remediation & Hardening
 
-### Security Implementation:
+The remediation focused on neutralizing the Layer 2 hijack and securing the DNS transport layer to prevent unencrypted injection.
+
 * **Metric Restoration:** Reset the interface priority to **100** and flushed the ARP neighbors to re-establish a trusted connection to the legitimate gateway.
-* **Encrypted Transport:** Configured `systemd-resolved` to enforce **DNS-over-TLS (DoT)** using Quad9 (`9.9.9.9:853`).
-* **Verification:** Validated that all outbound queries are now wrapped in TLS, rendering local packet-injection attempts (like the 839-byte noise) ineffective.
+* **Hardened Resolver:** Deployed **Unbound** as a local recursive resolver to enforce **DNS-over-TLS (DoT)**.
+* **Verification:** Confirmed that the resolver successfully ignores unencrypted 839-byte payloads by requiring valid TLS handshakes from upstream providers (Quad9/Cloudflare).
 
 
 
