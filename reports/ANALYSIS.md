@@ -10,8 +10,7 @@ The node successfully executed an ARP spoofing attack, associating the gateway I
 ### 2. DNS Frame Anomaly (The 839-Byte Signature)
 The most significant indicator was a recurring malformed DNS response for root-level (`.`) queries. 
 * **Observation:** While a standard DNS root response is typically minimal, the rogue packets were consistently **839 bytes**.
-* **Finding:** Hexadecimal inspection of the trailing bytes revealed repetitive null-padding (`0x00`) and unmapped EDNS0 options. 
-* **Impact:** This oversized frame triggered a "degraded" state in the host's NetworkManager, resulting in a metric shift to **20100** to mitigate perceived link instability.
+* **Impact Analysis:** Through separate simulation testing, it was confirmed that persistent injection of these malformed frames can trigger a kernel-level deprioritization (**Metric 20100**) in NetworkManager, though the initial incident was caught during the latency-degradation phase.
 
 ## ✅ Conclusion
 The incident was localized to physical repeater hardware and successfully remediated via the removal of the hardware and the implementation of **DNS-over-TLS (DoT)**, which prevents unencrypted L2/L3 packet injection from reaching the resolver.
