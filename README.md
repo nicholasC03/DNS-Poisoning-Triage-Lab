@@ -1,17 +1,13 @@
 # DNS Poisoning Triage & Mitigation Lab
 
-## Overview
-This repository documents a real-world DNS interception event identified within an Arch Linux environment. It serves as a technical case study in network traffic analysis and infrastructure hardening.
+## 📂 Repository Structure
+- **/scripts**: Automation tools for detecting DNS anomalies.
+- **/reports**: Formal forensic analysis and mitigation documentation.
+- **/logs**: Raw forensic telemetry and validation evidence.
 
-## The Incident: 839-Byte Anomaly
-During routine network auditing, a `dig` query for Root Name Servers (`.`) returned a response size of **839 bytes**. This payload suggested a Man-in-the-Middle (MiTM) interception at the gateway level.
+## 🚨 Incident Overview: The 839-Byte Anomaly
+This lab documents the detection of a 839-byte DNS payload (baseline <512b) indicating a Man-in-the-Middle (MiTM) interception at the gateway level.
 
-## Mitigation Strategy
-1. **Encryption:** Migrated from UDP/53 to encrypted DNS-over-TLS using Quad9.
-2. **Validation:** Configured `unbound` to perform DNSSEC validation.
-3. **Isolation:** Bypassed the compromised gateway resolver entirely.
-
-## How to Use
-1. **Audit:** Run `./checkdns.sh` to check your current gateway for payload anomalies.
-2. **Deploy:** Review `unbound.conf` for a reference hardened configuration.
-3. **Verify:** Check `logs/remediation_validation.txt` to see the expected healthy output.
+## 🛠️ Mitigation
+- Deployed **Unbound** with **DNS-over-TLS (DoT)** and **DNSSEC** validation.
+- Configured "Deny by Default" posture to bypass compromised local resolvers.
