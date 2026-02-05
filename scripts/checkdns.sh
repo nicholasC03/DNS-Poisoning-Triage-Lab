@@ -1,21 +1,12 @@
 #!/bin/bash
-# DNS Triage Tool - Automated Payload Size Auditing
-# Target: Detect MiTM/Poisoning via packet size anomalies (Baseline: <512 bytes)
+# Triage Script: Detect DNS discrepancies
+# Usage: ./checkdns.sh <target_domain>
 
-TARGET="."
-ROUTER_IP="192.168.1.1"
-THRESHOLD=512
+TARGET=${1:-"google.com"}
+LOCAL_NS=$(grep "nameserver" /etc/resolv.conf | awk '{print $2}' | head -n 1)
 
-echo "--- DNS Triage Audit Initiated ---"
-
-# Check local gateway
-SIZE=$(dig @$ROUTER_IP $TARGET NS +short +stats | grep "MSG SIZE" | awk '{print $4}')
-
-if [ -z "$SIZE" ]; then
-    echo "[!] Error: No response from $ROUTER_IP"
-elif [ "$SIZE" -gt "$THRESHOLD" ]; then
-    echo "[!] ALERT: Anomalous payload size detected ($SIZE bytes)."
-    echo "[!] Root NS responses > 512 bytes indicate potential cache poisoning/interception."
-else
-    echo "[+] Normal payload size: $SIZE bytes."
-fi
+echo "--- Triage for $TARGET ---"
+echo "Local ($LOCAL_NS):" && dig @$LOCAL_NS $TARGET +short | sort
+echo -e "\nSecure (1.1.1.1):" && dig @1.1.1.1 $TARGET +short | sort
+echo -e "\n--- Checking for Byte Size Inconsistencies ---"
+dig @$LOCAL_NS $TARGET | grep "MSG SIZE"

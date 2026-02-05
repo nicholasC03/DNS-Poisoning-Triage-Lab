@@ -1,13 +1,16 @@
-# DNS Poisoning Triage & Mitigation Lab
+# DNS Poisoning Triage Lab
+*Forensics and Remediation for Legacy Hardware Flaws*
 
-## 📂 Repository Structure
-- **/scripts**: Automation tools for detecting DNS anomalies.
-- **/reports**: Formal forensic analysis and mitigation documentation.
-- **/logs**: Raw forensic telemetry and validation evidence.
+## The Incident
+I noticed some weird redirects while using budget Wi-Fi repeaters in my lab. Instead of just resetting them, I treated it as a triage exercise to find the "smoking gun" for DNS cache poisoning.
 
-## 🚨 Incident Overview: The 839-Byte Anomaly
-This lab documents the detection of a 839-byte DNS payload (baseline <512b) indicating a Man-in-the-Middle (MiTM) interception at the gateway level.
+## Forensic Evidence (PCAP Analysis)
+The key finding was a significant byte-count discrepancy in DNS responses:
+- **Clean Response:** ~239 bytes
+- **Poisoned/Injected Response:** ~839 bytes
 
-## 🛠️ Mitigation
-- Deployed **Unbound** with **DNS-over-TLS (DoT)** and **DNSSEC** validation.
-- Configured "Deny by Default" posture to bypass compromised local resolvers.
+This 839-byte signature confirmed that the resolver was accepting unsolicited resource records, likely via a **Bailiwick Bypass**.
+
+## Tools & Hardening
+- **scripts/checkdns.sh:** A quick triage script I wrote to compare local responses against 1.1.1.1.
+- **configs/unbound.conf:** My Arch Linux Unbound setup. It uses DNS-over-TLS (DoT) to secure the "last mile" and ignore the repeater's untrusted DNS proxy.
