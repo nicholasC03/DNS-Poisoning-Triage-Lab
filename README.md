@@ -1,16 +1,67 @@
-# DNS Poisoning Triage Lab
-*Forensics and Remediation for Legacy Hardware Flaws*
+# 🛡️ DNS Poisoning & Network Forensic Triage
+**Incident Analysis and System Hardening Report**
 
-## The Incident
-I noticed some weird redirects while using budget Wi-Fi repeaters in my lab. Instead of just resetting them, I treated it as a triage exercise to find the "smoking gun" for DNS cache poisoning.
+[![Linux](https://img.shields.io/badge/OS-Arch_Linux-blue?logo=arch-linux&logoColor=white)](https://archlinux.org/)
+[![Wireshark](https://img.shields.io/badge/Forensics-Wireshark-blue?logo=wireshark&logoColor=white)](https://www.wireshark.org/)
+[![Security](https://img.shields.io/badge/Protocol-DNS--over--TLS-green)](https://quad9.net/)
 
-## Forensic Evidence (PCAP Analysis)
-The key finding was a significant byte-count discrepancy in DNS responses:
-- **Clean Response:** ~239 bytes
-- **Poisoned/Injected Response:** ~839 bytes
+---
 
-This 839-byte signature confirmed that the resolver was accepting unsolicited resource records, likely via a **Bailiwick Bypass**.
+## 📖 Executive Summary
+This repository documents a real-world network forensic investigation on an Arch Linux workstation (**RioluPC**). The incident involved localized Layer 2 and Layer 3 anomalies caused by rogue repeater hardware. The project details the identification of **ARP Poisoning** and **DNS Buffer Noise**, followed by the successful implementation of **DNS-over-TLS (DoT)** to secure the environment.
 
-## Tools & Hardening
-- **scripts/checkdns.sh:** A quick triage script I wrote to compare local responses against 1.1.1.1.
-- **configs/unbound.conf:** My Arch Linux Unbound setup. It uses DNS-over-TLS (DoT) to secure the "last mile" and ignore the repeater's untrusted DNS proxy.
+---
+
+## 🚩 Phase 1: Detection & Traffic Analysis
+The investigation began when the host kernel flagged the primary Ethernet interface as degraded. 
+
+### Technical Indicators (IoCs):
+* **Kernel Metric Shift:** The `enp4s0` metric was automatically deprioritized to **20100**, indicating high jitter or malformed traffic.
+* **ARP Table Discrepancy:** Direct inspection of the ARP cache revealed the gateway IP (`192.168.1.1`) was being claimed by an unauthorized MAC address (`00:11:22:33:44:55`).
+* **839-Byte DNS Payload:** Packet analysis identified oversized, malformed DNS responses for the root zone (`.`). These packets contained significant trailing "noise" bytes, totaling **839 bytes** on the wire—a departure from standard minimal DNS query/response behavior.
+
+
+
+---
+
+## 🔍 Phase 2: Forensic Evidence
+The primary evidence of this incident is captured in the provided `.pcap` file. Analysis of this capture reveals the sequential lifecycle of the disruption:
+
+1. **Unauthorized DHCP Offer:** Initial attempt by rogue hardware to establish a presence.
+2. **ARP Hijack:** The transition of the gateway hardware address to the attacker-controlled MAC.
+3. **Malformed Response:** The delivery of the 839-byte DNS response, which successfully triggered system-level deprioritization of the network link.
+
+
+
+---
+
+## 🛠️ Phase 3: Remediation & Hardening
+The remediation strategy focused on eliminating the physical threat and encrypting the DNS transport layer to prevent future unencrypted injection.
+
+### Security Implementation:
+* **Metric Restoration:** Reset the interface priority to **100** and flushed the ARP neighbors to re-establish a trusted connection to the legitimate gateway.
+* **Encrypted Transport:** Configured `systemd-resolved` to enforce **DNS-over-TLS (DoT)** using Quad9 (`9.9.9.9:853`).
+* **Verification:** Validated that all outbound queries are now wrapped in TLS, rendering local packet-injection attempts (like the 839-byte noise) ineffective.
+
+
+
+---
+
+## 📂 Repository Structure & Contents
+
+| Directory / File | Description |
+| :--- | :--- |
+| **`evidence/`** | Contains `full_network_incident.pcap` — the primary forensic capture of the 839-byte DNS anomaly and Layer 2 ARP poisoning. |
+| **`reports/`** | **`ANALYSIS.md`**: A technical deep-dive into the packet headers and indicators of compromise (IoCs) found during triage. |
+| **`scripts/`** | **`checkdns.sh`**: A custom Bash utility developed to automate DNS transport validation and latency monitoring post-remediation. |
+| **`configs/`** | **`unbound.conf`**: The hardened local resolver configuration used to enforce secure DNS recursions. |
+| **`logs/`** | **`remediation_validation.txt`**: Verified terminal output confirming the restoration of healthy routing metrics and encrypted transport. |
+| **`CVE_RESEARCH.md`**| Documentation of background research into buffer-related vulnerabilities and hardware-specific DNS exploits. |
+
+---
+
+## 🎓 Conclusion
+This triage highlights the importance of monitoring system-level network metrics as early warning indicators. By moving to a **DNS-over-TLS** architecture, the host has transitioned from a vulnerable, unencrypted posture to a hardened configuration suitable for sensitive cybersecurity research.
+
+---
+*Nicholas Comunale | 2026*
