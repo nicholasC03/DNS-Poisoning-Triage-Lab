@@ -1,6 +1,9 @@
 # 🛡️ DNS Poisoning & Network Forensic Triage
 **Incident Analysis and System Hardening Report**
 
+> [!IMPORTANT]
+> **Legal Disclaimer:** This repository is for educational and network forensic research purposes only. All analysis was conducted in a controlled lab environment. Unauthorized use of these techniques on networks without explicit permission is illegal.
+
 [![Linux](https://img.shields.io/badge/OS-Arch_Linux-blue?logo=arch-linux&logoColor=white)](https://archlinux.org/)
 [![Wireshark](https://img.shields.io/badge/Forensics-Wireshark-blue?logo=wireshark&logoColor=white)](https://www.wireshark.org/)
 [![Security](https://img.shields.io/badge/Protocol-DNS--over--TLS-green)](https://quad9.net/)
