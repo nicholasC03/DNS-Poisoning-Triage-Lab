@@ -10,3 +10,8 @@ During routine network auditing, a `dig` query for Root Name Servers (`.`) retur
 1. **Encryption:** Migrated from UDP/53 to encrypted DNS-over-TLS using Quad9.
 2. **Validation:** Configured `unbound` to perform DNSSEC validation.
 3. **Isolation:** Bypassed the compromised gateway resolver entirely.
+
+## How to Use
+1. **Audit:** Run `./checkdns.sh` to check your current gateway for payload anomalies.
+2. **Deploy:** Review `unbound.conf` for a reference hardened configuration.
+3. **Verify:** Check `logs/remediation_validation.txt` to see the expected healthy output.

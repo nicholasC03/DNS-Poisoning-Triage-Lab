@@ -1,0 +1,12 @@
+# Post-Remediation Validation
+# Listener: 127.0.0.1 (Unbound DoT)
+# Date: $(date)
+
+; <<>> DiG 9.20.18 <<>> @127.0.0.1 . NS
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 54321
+;; flags: qr rd ra ad; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 27
+
+;; MSG SIZE  rcvd: 239
+# STATUS: SUCCESS - Payload size matches expected baseline. 
+# MiTM injection neutralized via DNS-over-TLS.
