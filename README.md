@@ -13,12 +13,12 @@ This repository documents a real-world network forensic investigation on an Arch
 ---
 
 ## 🚩 Phase 1: Detection & Traffic Analysis
-The investigation began when the host kernel flagged the primary Ethernet interface as degraded. 
+The investigation was initiated following intermittent DNS resolution latency. While the routing metric remained at a default **100**, forensic inspection of the traffic revealed a signature anomaly.
 
 ### Technical Indicators (IoCs):
-* **Kernel Metric Shift:** The `enp4s0` metric was automatically deprioritized to **20100**, indicating high jitter or malformed traffic.
+* **839-Byte DNS Frame:** Packet analysis identified oversized, malformed DNS responses for the root zone (`.`). 
+* **Payload Discrepancy:** These frames contained significant trailing "noise" bytes, totaling **839 bytes** on the wire—a departure from standard minimal DNS query/response behavior.
 * **ARP Table Discrepancy:** Direct inspection of the ARP cache revealed the gateway IP (`192.168.1.1`) was being claimed by an unauthorized MAC address (`00:11:22:33:44:55`).
-* **839-Byte DNS Payload:** Packet analysis identified oversized, malformed DNS responses for the root zone (`.`). These packets contained significant trailing "noise" bytes, totaling **839 bytes** on the wire—a departure from standard minimal DNS query/response behavior.
 
 
 
