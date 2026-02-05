@@ -11,7 +11,7 @@
 ---
 
 ## 📖 Executive Summary
-This repository documents a real-world network forensic investigation on an Arch Linux workstation (**RioluPC**). The incident involved localized Layer 2 and Layer 3 anomalies caused by rogue repeater hardware. The project details the identification of **ARP Poisoning** and **DNS Buffer Noise**, followed by the successful implementation of **DNS-over-TLS (DoT)** to secure the environment.
+This repository documents a real-world network forensic investigation on an Arch Linux workstation. The incident involved localized Layer 2 and Layer 3 anomalies caused by rogue hardware. The project details the identification of ARP Poisoning and DNS Buffer Noise, followed by the successful implementation of DNS-over-TLS (DoT) to secure the environment.
 
 ---
 
