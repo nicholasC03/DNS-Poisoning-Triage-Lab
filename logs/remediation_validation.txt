@@ -1,6 +1,6 @@
 # Post-Remediation Validation
 # Listener: 127.0.0.1 (Unbound DoT)
-# Date: $(date)
+# Date: 2026-02-05 11:52 EST
 
 ; <<>> DiG 9.20.18 <<>> @127.0.0.1 . NS
 ;; Got answer:
@@ -8,5 +8,5 @@
 ;; flags: qr rd ra ad; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 27
 
 ;; MSG SIZE  rcvd: 239
-# STATUS: SUCCESS - Payload size matches expected baseline. 
+# STATUS: SUCCESS - Payload size matches expected baseline (239 vs poisoned 839). 
 # MiTM injection neutralized via DNS-over-TLS.
