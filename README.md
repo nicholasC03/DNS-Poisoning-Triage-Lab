@@ -1,70 +1,132 @@
-# 🛡️ DNS Poisoning & Network Forensic Triage
-**Incident Analysis and System Hardening Report**
+# DNS and ARP Traffic Triage Lab
 
-> [!IMPORTANT]
-> **Legal Disclaimer:** This repository is for educational and network forensic research purposes only. All analysis was conducted in a controlled lab environment. Unauthorized use of these techniques on networks without explicit permission is illegal.
+An educational packet-analysis and resolver-hardening exercise completed on an Arch Linux workstation.
 
-[![Linux](https://img.shields.io/badge/OS-Arch_Linux-blue?logo=arch-linux&logoColor=white)](https://archlinux.org/)
-[![Wireshark](https://img.shields.io/badge/Forensics-Wireshark-blue?logo=wireshark&logoColor=white)](https://www.wireshark.org/)
-[![Security](https://img.shields.io/badge/Protocol-DNS--over--TLS-green)](https://quad9.net/)
+> **Scope:** This repository is a learning project. The included capture is useful for practicing DNS and ARP inspection, but it does **not** by itself prove a live cache-poisoning attack, malicious hardware, exploitation of a specific CVE, or a causal connection to a NetworkManager routing metric.
 
----
+## Why I revised this project
 
-## 📖 Executive Summary
-This repository documents a real-world network forensic investigation on an Arch Linux workstation. The incident involved localized Layer 2 and Layer 3 anomalies caused by rogue hardware. The project details the identification of ARP Poisoning and DNS Buffer Noise, followed by the successful implementation of DNS-over-TLS (DoT) to secure the environment.
+My first write-up treated several observations as confirmed causes. That was too strong. A DNS frame being 839 bytes is not automatically malformed or malicious, and DNS-over-TLS protects DNS traffic to the configured upstream resolver—it does not stop ARP spoofing or every Layer 2/3 attack.
 
----
+The revised version keeps the useful parts of the lab while separating:
 
-## 🚩 Phase 1: Detection & Traffic Analysis
-The investigation was initiated following intermittent DNS resolution latency. While the routing metric remained at a default **100**, forensic inspection of the traffic revealed a signature anomaly.
+1. what the supplied data shows;
+2. what I initially suspected;
+3. what would require more evidence;
+4. what the resolver configuration actually changes.
 
-### Technical Indicators (IoCs):
-* **839-Byte DNS Frame:** Packet analysis identified oversized, malformed DNS responses for the root zone (`.`). 
-* **Payload Discrepancy:** These frames contained significant trailing "noise" bytes, totaling **839 bytes** on the wire—a departure from standard minimal DNS query/response behavior.
-* **ARP Table Discrepancy:** Direct inspection of the ARP cache revealed the gateway IP (`192.168.1.1`) was being claimed by an unauthorized MAC address (`00:11:22:33:44:55`).
+That distinction is part of good incident work. It is better to narrow a conclusion than to claim more than the evidence supports.
 
+## Lab goals
 
+- Inspect DNS and ARP traffic with Wireshark and `tshark`.
+- Compare local resolver results with a known public resolver without mislabeling plaintext DNS as encrypted.
+- Configure Unbound to forward upstream DNS queries over authenticated TLS.
+- Document limitations and alternative explanations.
+- Produce steps another person can repeat.
 
----
+## Environment
 
-## 🔍 Phase 2: Forensic Evidence
-The primary evidence of this incident is captured in the provided `.pcap` file. Analysis of this capture reveals the sequential lifecycle of the disruption:
+- Arch Linux workstation
+- Wireshark / `tshark`
+- BIND `dig`
+- Unbound local resolver
+- Cloudflare and Quad9 upstream resolvers over TCP/853
 
-1. **Unauthorized DHCP Offer:** Initial attempt by rogue hardware to establish a presence.
-2. **ARP Hijack:** The transition of the gateway hardware address to the attacker-controlled MAC.
-3. **Malformed Response:** The delivery of the 839-byte DNS response, which successfully triggered system-level deprioritization of the network link.
+Exact package versions should be recorded when the lab is rerun. The current repository does not contain enough version metadata to attribute the traffic to a product vulnerability.
 
+## Evidence provided
 
+| Path | Purpose |
+|---|---|
+| `evidence/incident_triage_snippet.pcap` | Small packet-capture sample used for DNS/ARP inspection |
+| `evidence/wireshark_anomoly.png` | Legacy screenshot filename retained for repository history; `anomaly` is the correct spelling |
+| `reports/ANALYSIS.md` | Evidence-based review and limitations |
+| `scripts/checkdns.sh` | Compares resolver output and clearly labels transport |
+| `configs/unbound.conf` | Example Unbound forwarding configuration using DNS-over-TLS |
+| `logs/remediation_validation.txt` | Example validation output with corrected conclusions |
+| `CVE_RESEARCH.md` | Explains why the available evidence does not support a CVE attribution |
 
----
+## Reproduce the review
 
-### 🛠️ Phase 3: Remediation & Hardening
+### 1. Record file integrity
 
-The remediation focused on neutralizing the Layer 2 hijack and securing the DNS transport layer to prevent unencrypted injection.
+```bash
+sha256sum evidence/incident_triage_snippet.pcap
+capinfos evidence/incident_triage_snippet.pcap
+```
 
-* **Metric Restoration:** Reset the interface priority to **100** and flushed the ARP neighbors to re-establish a trusted connection to the legitimate gateway.
-* **Hardened Resolver:** Deployed **Unbound** as a local recursive resolver to enforce **DNS-over-TLS (DoT)**.
-* **Verification:** Confirmed that the resolver successfully ignores unencrypted 839-byte payloads by requiring valid TLS handshakes from upstream providers (Quad9/Cloudflare).
+Save the hash and capture metadata with your notes. Do not call the capture “full incident evidence”; it is a snippet.
 
+### 2. Review ARP traffic
 
+```bash
+tshark -r evidence/incident_triage_snippet.pcap -Y arp \
+  -T fields -e frame.number -e frame.time_relative \
+  -e arp.opcode -e arp.src.proto_ipv4 -e arp.src.hw_mac \
+  -e arp.dst.proto_ipv4 -e arp.dst.hw_mac
+```
 
----
+Look for repeated or conflicting IP-to-MAC claims. A conflict is a lead to investigate, not automatic proof of an attacker. Check whether the addresses are synthetic lab values, whether a device legitimately changed, and whether the timing supports the hypothesis.
 
-## 📂 Repository Structure & Contents
+### 3. Review DNS traffic
 
-| Directory / File | Description |
-| :--- | :--- |
-| **`evidence/`** | Contains `full_network_incident.pcap` — the primary forensic capture of the 839-byte DNS anomaly and Layer 2 ARP poisoning. |
-| **`reports/`** | **`ANALYSIS.md`**: A technical deep-dive into the packet headers and indicators of compromise (IoCs) found during triage. |
-| **`scripts/`** | **`checkdns.sh`**: A custom Bash utility developed to automate DNS transport validation and latency monitoring post-remediation. |
-| **`configs/`** | **`unbound.conf`**: The hardened local resolver configuration used to enforce secure DNS recursions. |
-| **`logs/`** | **`remediation_validation.txt`**: Verified terminal output confirming the restoration of healthy routing metrics and encrypted transport. |
-| **`CVE_RESEARCH.md`**| Documentation of background research into buffer-related vulnerabilities and hardware-specific DNS exploits. |
+```bash
+tshark -r evidence/incident_triage_snippet.pcap -Y dns \
+  -T fields -e frame.number -e frame.time_relative \
+  -e ip.src -e ip.dst -e udp.srcport -e udp.dstport \
+  -e dns.id -e dns.flags.response -e dns.qry.name \
+  -e dns.count.answers -e frame.len
+```
 
----
+Useful follow-up filters:
 
-## 🎓 Conclusion
-This triage highlights the importance of monitoring system-level network metrics as early warning indicators. By moving to a **DNS-over-TLS** architecture, the host has transitioned from a vulnerable, unencrypted posture to a hardened configuration suitable for sensitive cybersecurity research.
+```text
+dns && frame.len == 839
+dns.flags.response == 1
+dns.qry.name == "."
+arp.duplicate-address-detected || arp.duplicate-address-frame
+```
 
----
-*Nicholas Comunale | 2026*
+Packet size alone is not a verdict. DNS response sizes can vary because of record count, EDNS, DNSSEC, and transport behavior. Inspect the decoded records and compare them with a known-good baseline.
+
+### 4. Compare resolvers
+
+```bash
+chmod +x scripts/checkdns.sh
+./scripts/checkdns.sh example.com
+```
+
+The script labels a direct `dig @1.1.1.1` query correctly as plaintext DNS on port 53. When `kdig` is available, it also performs a separate TLS test.
+
+### 5. Validate Unbound forwarding
+
+Review `configs/unbound.conf`, adapt certificate paths for the local system, and validate before use:
+
+```bash
+sudo unbound-checkconf configs/unbound.conf
+sudo ss -tnp | grep ':853'
+dig @127.0.0.1 example.com
+```
+
+A successful query plus an established connection to TCP/853 supports the narrower conclusion that Unbound is forwarding to the configured upstream over TLS. It does not prove that an unrelated ARP or routing issue was eliminated.
+
+## Findings and limitations
+
+- The capture can be used to identify DNS and ARP frames and practice a structured review.
+- An 839-byte DNS frame is an observation, not an indicator of compromise by itself.
+- The current evidence does not identify a vulnerable BIND 9 resolver or affected version, so CVE-2025-40778 is background research rather than an incident attribution.
+- Authenticated DNS-over-TLS improves confidentiality and integrity between this resolver and its upstream. It does not secure the entire local network.
+- Strong attribution would require full capture provenance, device inventories, resolver/version evidence, packet-number references, timestamps, and repeatable before/after testing.
+
+## References
+
+- [RFC 7858 — DNS over TLS](https://www.rfc-editor.org/rfc/rfc7858)
+- [RFC 8310 — DNS Privacy Usage Profiles](https://www.rfc-editor.org/rfc/rfc8310)
+- [ISC advisory for CVE-2025-40778](https://kb.isc.org/docs/cve-2025-40778)
+- [Wireshark display-filter reference](https://www.wireshark.org/docs/dfref/)
+
+## Legal and privacy note
+
+Use packet-capture and network-testing tools only on systems and networks you own or are authorized to test. Review captures for private addresses, hostnames, tokens, credentials, and personal information before publishing them.
+
