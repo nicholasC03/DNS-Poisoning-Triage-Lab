@@ -1,9 +1,7 @@
-# Reports & Documentation
-This directory contains the analytical output of the DNS poisoning investigation.
+# Reports and documentation
 
-### Files:
-* **ANALYSIS.md**: The primary forensic report detailing the 839-byte DNS anomaly and ARP poisoning sequence.
-* **remediation_validation.txt** (located in `/logs`): Verification of the system's "Known Good" state post-hardening.
+- `ANALYSIS.md` separates observations, hypotheses, configuration changes, and evidence gaps.
+- `../logs/remediation_validation.txt` records a resolver check without treating message size as proof of compromise or remediation.
 
----
-*Note: This analysis was performed on live traffic captured from the RioluPC (personal) workstation during the triage phase.*
+This is an educational traffic-triage project. The capture snippet can support packet-analysis practice, but the published evidence does not establish a confirmed live poisoning incident, malicious hardware, or exploitation of a named CVE.
+
