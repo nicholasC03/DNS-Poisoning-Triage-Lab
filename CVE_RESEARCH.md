@@ -1,17 +1,32 @@
-# CVE Mapping & Industry Research
-*Connecting 839-byte forensic data to known industry vulnerabilities.*
+# CVE Research and Attribution Limits
 
-### 1. Modern Resolver Vulnerabilities (2025-2026)
-My triage data (839-byte vs 239-byte mismatch) maps directly to these critical flaws:
+## Why a packet size cannot identify a CVE
 
-* **[CVE-2025-40778](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-40778) (BIND 9 Bailiwick Bypass):** This is the primary suspect for the unsolicited resource record injection I caught in the PCAP.
-* **[CVE-2025-5994](https://nvd.nist.gov/vuln/detail/CVE-2025-5994) ("Rebirthday Attack"):** Explains the latency spikes and "race conditions" observed in budget hardware under heavy query load.
+A CVE maps to a specific vulnerable product, version range, and behavior. Matching a frame length or a general symptom is not enough. Before connecting a capture to a vulnerability, an investigation should establish:
 
-### 2. Generic Hardware Weaknesses
-Budget and off-brand repeaters often run unpatched, legacy libraries:
+1. the product and exact version in the traffic path;
+2. whether that version is affected;
+3. whether the vulnerability's prerequisites exist;
+4. packet- or log-level evidence of the described behavior;
+5. a repeatable test or additional evidence that rules out ordinary explanations.
 
-* **[CVE-2026-0625](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-0625):** A CVSS 9.3 vulnerability in legacy firmware common in generic hardware, leaving management interfaces open to DNS modification.
-* **[CVE-2022-33989](https://nvd.nist.gov/vuln/detail/CVE-2022-33989) (dproxy-nexgen):** Static UDP source ports. Since these devices lack proper entropy, cache poisoning becomes significantly easier to execute.
+## CVE-2025-40778
 
----
-**Summary of Findings:** The use of **Unbound with DNS-over-TLS (DoT)** successfully remediates these plaintext vulnerabilities by enforcing encryption and validation at the resolver level.
+[ISC's advisory](https://kb.isc.org/docs/cve-2025-40778) describes cache-poisoning risk in affected **BIND 9** resolver versions under certain conditions involving acceptance of records from answers.
+
+The published files in this repository do not identify an affected BIND 9 resolver or show its version. The provided hardening example uses Unbound as a local forwarder. Therefore, CVE-2025-40778 may be useful background reading, but it is **not an established explanation for this capture**.
+
+## DNS-over-TLS and vulnerability remediation
+
+DNS-over-TLS encrypts and authenticates DNS transport between a client/forwarder and its configured upstream resolver. It does not patch a vulnerable resolver implementation, prove that a prior response was forged, or prevent unrelated Layer 2 attacks.
+
+The accurate conclusion for this lab is:
+
+> The Unbound configuration changes upstream DNS transport from plaintext DNS to authenticated TLS. No claim is made that this configuration remediates a specific CVE or secures all local-network traffic.
+
+## References
+
+- [ISC: CVE-2025-40778](https://kb.isc.org/docs/cve-2025-40778)
+- [RFC 7858: Specification for DNS over TLS](https://www.rfc-editor.org/rfc/rfc7858)
+- [RFC 8310: Usage Profiles for DNS over TLS and DNS over DTLS](https://www.rfc-editor.org/rfc/rfc8310)
+
